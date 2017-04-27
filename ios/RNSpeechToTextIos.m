@@ -43,7 +43,7 @@
     
     NSError* audioSessionError = nil;
     AVAudioSession* audioSession = [AVAudioSession sharedInstance];
-    [audioSession setCategory:AVAudioSessionCategoryRecord error:&audioSessionError];
+    [audioSession setCategory:AVAudioSessionCategoryPlayAndRecord withOptions: AVAudioSessionCategoryOptionMixWithOthers error:&audioSessionError];
     if (audioSessionError != nil) {
         [self sendResult:RCTMakeError([audioSessionError localizedDescription], nil, nil) :nil :nil :nil];
         return;
@@ -79,7 +79,7 @@
     
     // Configure request so that results are returned before audio recording is finished
     self.recognitionRequest.shouldReportPartialResults = YES;
-
+    
     // A recognition task represents a speech recognition session.
     // We keep a reference to the task so that it can be cancelled.
     self.recognitionTask = [self.speechRecognizer recognitionTaskWithRequest:self.recognitionRequest resultHandler:^(SFSpeechRecognitionResult * _Nullable result, NSError * _Nullable error) {
@@ -125,7 +125,7 @@
 }
 
 - (void) sendResult:(NSDictionary*)error :(NSDictionary*)bestTranscription :(NSArray*)transcriptions :(NSNumber*)isFinal {
-//    NSString *eventName = notification.userInfo[@"name"];
+    //    NSString *eventName = notification.userInfo[@"name"];
     NSMutableDictionary* result = [[NSMutableDictionary alloc] init];
     if (error != nil && error != [NSNull null]) {
         result[@"error"] = error;
@@ -165,7 +165,7 @@
                                        @"length":@(segment.substringRange.length)},
                    @"timestamp":@(segment.timestamp),
                    @"duration":@(segment.duration),
-
+                   
                    @"confidence":@(segment.confidence),
                    @"alternativeSubstrings":segment.alternativeSubstrings,
                    };
@@ -238,4 +238,4 @@ RCT_EXPORT_MODULE()
 
 
 @end
-  
+
