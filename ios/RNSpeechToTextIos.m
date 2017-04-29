@@ -186,6 +186,9 @@
 
 RCT_EXPORT_METHOD(finishRecognition)
 {
+    #if TARGET_IPHONE_SIMULATOR
+        return;
+    #endif
     // lets finish it
     [self.recognitionTask finish];
 }
@@ -193,11 +196,18 @@ RCT_EXPORT_METHOD(finishRecognition)
 
 RCT_EXPORT_METHOD(stopRecognition)
 {
+    #if TARGET_IPHONE_SIMULATOR
+        return;
+    #endif
     [self teardown];
 }
 
 RCT_EXPORT_METHOD(startRecognition:(NSString*)localeStr)
 {
+    #if TARGET_IPHONE_SIMULATOR
+        return;
+    #endif
+
     if (self.recognitionTask != nil) {
         [self sendResult:RCTMakeError(@"Speech recognition already started!", nil, nil) :nil :nil :nil];
         return;
