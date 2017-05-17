@@ -5,6 +5,7 @@
 #import <React/RCTBridge.h>
 #import <React/RCTEventDispatcher.h>
 #import <Speech/Speech.h>
+#import <React/RCTLog.h>
 
 @interface RNSpeechToTextIos () <SFSpeechRecognizerDelegate>
 
@@ -39,27 +40,6 @@
     }
 
     self.speechRecognizer.delegate = self;
-
-
-    NSError* audioSessionError = nil;
-    AVAudioSession* audioSession = [AVAudioSession sharedInstance];
-    [audioSession setCategory:AVAudioSessionCategoryPlayAndRecord withOptions: AVAudioSessionCategoryOptionMixWithOthers error:&audioSessionError];
-    if (audioSessionError != nil) {
-        [self sendResult:RCTMakeError([audioSessionError localizedDescription], nil, nil) :nil :nil :nil];
-        return;
-    }
-    [audioSession setMode:AVAudioSessionModeMeasurement error:&audioSessionError];
-    if (audioSessionError != nil) {
-        [self sendResult:RCTMakeError([audioSessionError localizedDescription], nil, nil) :nil :nil :nil];
-        return;
-    }
-    [audioSession setActive:YES withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:&audioSessionError];
-    if (audioSessionError != nil) {
-        [self sendResult:RCTMakeError([audioSessionError localizedDescription], nil, nil) :nil :nil :nil];
-        return;
-    }
-
-
     self.recognitionRequest = [[SFSpeechAudioBufferRecognitionRequest alloc] init];
 
     if (self.recognitionRequest == nil){
@@ -68,6 +48,24 @@
     }
 
     if (self.audioEngine == nil) {
+        NSError* audioSessionError = nil;
+        AVAudioSession* audioSession = [AVAudioSession sharedInstance];
+        [audioSession setCategory:AVAudioSessionCategoryPlayAndRecord withOptions: AVAudioSessionCategoryOptionMixWithOthers|AVAudioSessionCategoryOptionDefaultToSpeaker error:&audioSessionError];
+        if (audioSessionError != nil) {
+            [self sendResult:RCTMakeError([audioSessionError localizedDescription], nil, nil) :nil :nil :nil];
+            return;
+        }
+        [audioSession setMode:AVAudioSessionModeMeasurement error:&audioSessionError];
+        if (audioSessionError != nil) {
+            [self sendResult:RCTMakeError([audioSessionError localizedDescription], nil, nil) :nil :nil :nil];
+            return;
+        }
+        [audioSession setActive:YES withOptions:AVAudioSessionSetActiveOptionNotifyOthersOnDeactivation error:&audioSessionError];
+        if (audioSessionError != nil) {
+            [self sendResult:RCTMakeError([audioSessionError localizedDescription], nil, nil) :nil :nil :nil];
+            return;
+        }
+
         self.audioEngine = [[AVAudioEngine alloc] init];
 
         AVAudioInputNode* inputNode = self.audioEngine.inputNode;
@@ -83,6 +81,13 @@
                 [self.recognitionRequest appendAudioPCMBuffer:buffer];
             }
         }];
+
+        [self.audioEngine prepare];
+        [self.audioEngine startAndReturnError:&audioSessionError];
+        if (audioSessionError != nil) {
+            [self sendResult:RCTMakeError([audioSessionError localizedDescription], nil, nil) :nil :nil :nil];
+            return;
+        }
     }
 
     // Configure request so that results are returned before audio recording is finished
@@ -115,13 +120,6 @@
         NSLog(@"CALLBACK : Final: %i, status:%i", isFinal, self.recognitionTask.state);
 
     }];
-
-    [self.audioEngine prepare];
-    [self.audioEngine startAndReturnError:&audioSessionError];
-    if (audioSessionError != nil) {
-        [self sendResult:RCTMakeError([audioSessionError localizedDescription], nil, nil) :nil :nil :nil];
-        return;
-    }
 }
 
 - (void) sendResult:(NSDictionary*)error :(NSDictionary*)bestTranscription :(NSArray*)transcriptions :(NSNumber*)isFinal {
@@ -149,9 +147,9 @@
     self.recognitionTask = nil;
 
     //if (self.audioEngine.isRunning) {
-        //[self.audioEngine stop];
-        [self.recognitionRequest endAudio];
-        //[self.audioEngine.inputNode removeTapOnBus:0];
+    //[self.audioEngine stop];
+    [self.recognitionRequest endAudio];
+    //[self.audioEngine.inputNode removeTapOnBus:0];
     //}
 
     self.recognitionRequest = nil;
@@ -186,9 +184,9 @@
 
 RCT_EXPORT_METHOD(finishRecognition)
 {
-    #if TARGET_IPHONE_SIMULATOR
-        return;
-    #endif
+#if TARGET_IPHONE_SIMULATOR
+    return;
+#endif
     // lets finish it
     [self.recognitionTask finish];
 }
@@ -196,17 +194,17 @@ RCT_EXPORT_METHOD(finishRecognition)
 
 RCT_EXPORT_METHOD(stopRecognition)
 {
-    #if TARGET_IPHONE_SIMULATOR
-        return;
-    #endif
+#if TARGET_IPHONE_SIMULATOR
+    return;
+#endif
     [self teardown];
 }
 
 RCT_EXPORT_METHOD(startRecognition:(NSString*)localeStr)
 {
-    #if TARGET_IPHONE_SIMULATOR
-        return;
-    #endif
+#if TARGET_IPHONE_SIMULATOR
+    return;
+#endif
 
     if (self.recognitionTask != nil) {
         [self sendResult:RCTMakeError(@"Speech recognition already started!", nil, nil) :nil :nil :nil];
@@ -233,7 +231,26 @@ RCT_EXPORT_METHOD(startRecognition:(NSString*)localeStr)
 
 }
 
+RCT_EXPORT_METHOD(changeAVAudioSessionMode:(NSDictionary *)options)
+{
+#if TARGET_IPHONE_SIMULATOR
+    return;
+#endif
+    NSError* audioSessionError = nil;
+    AVAudioSession* audioSession = [AVAudioSession sharedInstance];
 
+    NSString *mode = options[@"mode"];
+
+    if (mode == nil) {
+        [self sendResult:RCTMakeError(@"mode option required", nil, nil) :nil :nil :nil];
+    }
+
+    [audioSession setMode:mode error:&audioSessionError];
+    if (audioSessionError != nil) {
+        [self sendResult:RCTMakeError([audioSessionError localizedDescription], nil, nil) :nil :nil :nil];
+        return;
+    }
+}
 
 
 - (dispatch_queue_t)methodQueue {
@@ -241,10 +258,5 @@ RCT_EXPORT_METHOD(startRecognition:(NSString*)localeStr)
 }
 
 RCT_EXPORT_MODULE()
-
-//- (NSDictionary *)constantsToExport {
-//    return @{@"greeting": @"Welcome to the DevDactic\n React Native Tutorial!"};
-//}
-
 
 @end
