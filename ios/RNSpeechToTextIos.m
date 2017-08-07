@@ -1,3 +1,4 @@
+
 #import "RNSpeechToTextIos.h"
 #import <UIKit/UIKit.h>
 #import <React/RCTUtils.h>
@@ -234,7 +235,9 @@ RCT_EXPORT_METHOD(startRecognition:(NSString*)localeStr)
 
 }
 
-RCT_EXPORT_METHOD(changeAVAudioSessionMode:(NSDictionary *)options)
+RCT_EXPORT_METHOD(changeAVAudioSessionMode:(NSDictionary *)options
+                  resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject)
 {
 #if TARGET_IPHONE_SIMULATOR
   return;
@@ -245,14 +248,17 @@ RCT_EXPORT_METHOD(changeAVAudioSessionMode:(NSDictionary *)options)
   NSString *mode = options[@"mode"];
 
   if (mode == nil) {
-    [self sendResult:RCTMakeError(@"mode option required", nil, nil) :nil :nil :nil];
+    reject(RCTErrorUnspecified, nil, RCTErrorWithMessage(@"mode option required"));
+    return;
   }
 
   [audioSession setMode:mode error:&audioSessionError];
   if (audioSessionError != nil) {
-    [self sendResult:RCTMakeError([audioSessionError localizedDescription], nil, nil) :nil :nil :nil];
+    reject(RCTErrorUnspecified, nil, RCTErrorWithMessage([audioSessionError localizedDescription]));
     return;
   }
+
+  resolve(@"success");
 }
 
 
