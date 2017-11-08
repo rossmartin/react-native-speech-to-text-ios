@@ -2,7 +2,6 @@
 #import "RNSpeechToTextIos.h"
 #import <UIKit/UIKit.h>
 #import <React/RCTUtils.h>
-#import <React/RCTBridge.h>
 #import <React/RCTEventDispatcher.h>
 #import <Speech/Speech.h>
 #import <React/RCTLog.h>
@@ -14,8 +13,6 @@
 @property (nonatomic) AVAudioEngine* audioEngine;
 @property (nonatomic) SFSpeechRecognitionTask* recognitionTask;
 
-
-@property (nonatomic, weak, readwrite) RCTBridge *bridge;
 
 @end
 
@@ -138,8 +135,7 @@
     result[@"isFinal"] = isFinal;
   }
 
-  [self.bridge.eventDispatcher sendAppEventWithName:@"SpeechToText"
-                                               body:result];
+  [self sendEventWithName:@"SpeechToText" body:result];
 }
 
 - (void) teardown {
